@@ -1,0 +1,6 @@
+dashboard-sign-in
+check that page contains stored value from "appTitle"
+check that page contains stored value from "appId"
+check that page contains stored value from "namespace"
+click on 1st stored value "namespace"
+check that page contains "Add row"

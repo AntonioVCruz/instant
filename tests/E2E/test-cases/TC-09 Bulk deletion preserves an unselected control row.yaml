@@ -1,0 +1,34 @@
+customSteps: |
+  save value from stored value "accountCEmail" as "e2eEmail"
+  save value from stored value "accountCInbox" as "codeInboxUrl"
+  save value from stored value "accountCTitle" as "appTitle"
+  save value from stored value "accountCId" as "appId"
+  explorer-open
+  click "Add row"
+  click checkbox "NULL"
+  generate from regex "SelectedA[A-Za-z]{16}", then enter into "hello world (Shift+Enter for new line)" and save as "selectedA"
+  click button "Save"
+  check that page contains stored value from "selectedA"
+  click "Add row"
+  click checkbox "NULL"
+  generate from regex "SelectedB[A-Za-z]{16}", then enter into "hello world (Shift+Enter for new line)" and save as "selectedB"
+  click button "Save"
+  check that page contains stored value from "selectedB"
+  click "Add row"
+  click checkbox "NULL"
+  generate from regex "Unselected[A-Za-z]{16}", then enter into "hello world (Shift+Enter for new line)" and save as "unselected"
+  click button "Save"
+  check that page contains stored value from "unselected"
+  click checkbox to the left of stored value "selectedA"
+  click checkbox to the left of stored value "selectedB"
+  explorer-confirm-bulk-deletion
+  reload
+  check that page doesn't contain stored value from "selectedA"
+  check that page doesn't contain stored value from "selectedB"
+  check that page contains stored value from "unselected"
+  click checkbox to the left of stored value "unselected"
+  explorer-confirm-deletion
+  reload
+  check that page doesn't contain stored value from "unselected"
+labels: [instant-explorer, instant-tc09]
+testCaseUuid: "b645e7b2-9c81-4f8f-b856-4c2e8b9aa0bc"

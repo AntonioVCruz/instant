@@ -1,0 +1,27 @@
+customSteps: |
+  save value from stored value "accountAEmail" as "e2eEmail"
+  save value from stored value "accountAInbox" as "codeInboxUrl"
+  save value from stored value "accountATitle" as "appTitle"
+  save value from stored value "accountAId" as "appId"
+  explorer-open
+  generate from regex "e2e_temp_[a-z]{12}", and save as "renamedNamespace"
+  click stored value "renameNamespace"
+  check that page contains stored value from "renameTitle"
+  click "Edit Schema"
+  click "Rename"
+  enter stored value "renamedNamespace" into input
+  enter enter into input
+  type escape
+  reload
+  click stored value "renamedNamespace"
+  check that page contains stored value from "renamedNamespace"
+  check that page doesn't contain stored value from "renameNamespace"
+  check that page contains stored value from "renameTitle"
+  click "Edit Schema"
+  click button "Delete"
+  click button string with parameters "Delete ${renamedNamespace}"
+  reload
+  check that page doesn't contain stored value from "renamedNamespace"
+  check that page doesn't contain stored value from "renameTitle"
+labels: [instant-explorer, instant-tc04]
+testCaseUuid: "c5ec0ffb-62d4-491b-9021-2c3e096613c1"

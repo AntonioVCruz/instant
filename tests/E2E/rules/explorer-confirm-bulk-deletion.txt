@@ -1,0 +1,3 @@
+click "Delete Selected Rows"
+check that page contains "delete 2 rows"
+click button "Delete rows"

@@ -1,0 +1,27 @@
+customSteps: |
+  save value from stored value "accountCEmail" as "e2eEmail"
+  save value from stored value "accountCInbox" as "codeInboxUrl"
+  save value from stored value "accountCTitle" as "appTitle"
+  save value from stored value "accountCId" as "appId"
+  explorer-open
+  click "Add row"
+  click checkbox "NULL"
+  generate from regex "Keep[A-Za-z]{20}", then enter into "hello world (Shift+Enter for new line)" and save as "protectedTitle"
+  click button "Save"
+  reload
+  check that page contains stored value from "protectedTitle"
+  click checkbox to the left of stored value "protectedTitle"
+  click "Delete Selected Rows"
+  check that page contains "irreversible operation"
+  type escape
+  check that page doesn't contain "irreversible operation"
+  check that page contains stored value from "protectedTitle"
+  reload
+  check that page contains stored value from "protectedTitle"
+  click checkbox to the left of stored value "protectedTitle"
+  explorer-confirm-deletion
+  reload
+  check that page contains stored value from "namespace"
+  check that page doesn't contain stored value from "protectedTitle"
+labels: [instant-explorer, instant-tc03]
+testCaseUuid: "bb7a1c15-7e2c-49ac-bd7d-9e15d04ed38f"
