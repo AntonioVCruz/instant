@@ -1,0 +1,22 @@
+customSteps: |
+  save value from stored value "accountAEmail" as "e2eEmail"
+  save value from stored value "accountAInbox" as "codeInboxUrl"
+  save value from stored value "accountATitle" as "appTitle"
+  save value from stored value "accountAId" as "appId"
+  explorer-open
+  click stored value "e2eEmail"
+  click "user settings icon on the right of the account row in the open account menu" using AI
+  check that page contains "User Settings"
+  click "Log Out"
+  check that page contains "Let's log you in"
+  check that page contains "Send Code"
+  go back
+  go back
+  reload
+  check that url contains "t=explorer"
+  check that page contains "Let's log you in"
+  check that page contains "Send Code"
+  check that page doesn't contain "Add row"
+  check that page doesn't contain stored value from "appTitle"
+labels: [instant-explorer, instant-tc10]
+testCaseUuid: "f9157d76-d94a-425a-a112-b324a6ff5d93"

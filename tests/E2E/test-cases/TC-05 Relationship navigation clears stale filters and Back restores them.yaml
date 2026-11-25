@@ -1,0 +1,24 @@
+customSteps: |
+  save value from stored value "accountBEmail" as "e2eEmail"
+  save value from stored value "accountBInbox" as "codeInboxUrl"
+  save value from stored value "accountBTitle" as "appTitle"
+  save value from stored value "accountBId" as "appId"
+  explorer-open
+  click "e2e_nav_people"
+  enter "title:NavParentMatch" into "Filter..."
+  check that page contains "NavParentMatch"
+  check that page contains "1 - 1 of 1"
+  check that page doesn't contain "NavParentOther"
+  click "1 link" to the left of "NavParentMatch"
+  check that page contains "NavChildMatch"
+  check that page contains "1 - 1 of 1"
+  check that page doesn't contain "NavChildOther"
+  click "back arrow to the left of the namespace heading" using AI
+  check that page contains "NavParentMatch"
+  check that page contains "1 - 1 of 1"
+  check that page doesn't contain "NavParentOther"
+  enter "" into "Filter..."
+  check that page contains "NavParentOther"
+  check that page contains "1 - 2 of 2"
+labels: [instant-explorer, instant-tc05]
+testCaseUuid: "5ebc10a1-d956-4e85-8580-22d2b8bb27b2"

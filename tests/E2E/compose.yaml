@@ -1,0 +1,133 @@
+services:
+  postgres:
+    image: ghcr.io/instantdb/postgresql:postgresql-17-pg-hint-plan@sha256:45916a14c2312decb54881a054b346f3a088c5a0ade13089716c970da70572a5
+    environment:
+      POSTGRES_USER: instant
+      POSTGRES_DB: instant
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run the installer first}
+    command:
+      [
+        postgres,
+        -c,
+        wal_level=logical,
+        -c,
+        max_replication_slots=10,
+        -c,
+        max_wal_senders=10,
+        -c,
+        shared_preload_libraries=pg_hint_plan,
+        -c,
+        random_page_cost=1.1,
+      ]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U instant -d instant]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+    mem_limit: 1g
+    cpus: 2
+
+  minio:
+    image: ${INSTANT_E2E_PROJECT:-instant-e2e}/storage:9e49d5e7a648
+    build:
+      context: docker
+      dockerfile: Minio.Dockerfile
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Run the installer first}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Run the installer first}
+      MINIO_BROWSER: "off"
+      MC_HOST_e2e: http://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@localhost:9000
+    command: [server, /data, --address, ":9000"]
+    ports:
+      - "127.0.0.1:${STORAGE_PORT:-19000}:9000"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:9000/minio/health/live]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+    mem_limit: 1g
+    cpus: 2
+
+  createbuckets:
+    image: ${INSTANT_E2E_PROJECT:-instant-e2e}/storage:9e49d5e7a648
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MC_HOST_e2e: http://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@minio:9000
+    entrypoint: [mc]
+    command: [mb, --ignore-existing, e2e/instant-e2e]
+    mem_limit: 128m
+
+  server:
+    image: ${INSTANT_E2E_PROJECT:-instant-e2e}/server:${APP_IMAGE_TAG:?Run the installer first}
+    build:
+      context: ../../server
+      dockerfile: Dockerfile.self-hosted
+      labels:
+        org.opencontainers.image.revision: ${APP_SOURCE_SHA}
+        org.opencontainers.image.source: https://github.com/instantdb/instant
+    depends_on:
+      postgres:
+        condition: service_healthy
+      createbuckets:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://instant:${POSTGRES_PASSWORD}@postgres:5432/instant?sslmode=disable
+      WAL_HISTORY_STORAGE: pg
+      CONNECTION_POOL_SIZE: "10"
+      JAVA_OPTS: -Xms256m -Xmx2g
+      INSTANT_BACKEND_URL: http://${INSTANT_E2E_HOST:-127.0.0.1}:${BACKEND_PORT:-18888}
+      INSTANT_DASHBOARD_URL: http://${INSTANT_E2E_HOST:-127.0.0.1}:${DASHBOARD_PORT:-13000}
+      INSTANT_SUPERUSER_EMAIL: operator@instant-e2e.example
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_REGION: us-east-1
+      AWS_EC2_METADATA_DISABLED: "true"
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: http://${INSTANT_E2E_HOST:-127.0.0.1}:${STORAGE_PORT:-19000}
+      S3_BUCKET: instant-e2e
+      POSTMARK_TOKEN: ""
+      SENDGRID_TOKEN: ""
+      RESEND_TOKEN: ""
+      STRIPE_API_KEY: ""
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-18888}:8888"
+    volumes:
+      - server-config:/app/resources/config
+    mem_limit: 3g
+    cpus: 2
+
+  www:
+    image: ${INSTANT_E2E_PROJECT:-instant-e2e}/www:${APP_IMAGE_TAG:?Run the installer first}
+    build:
+      context: ../../client
+      dockerfile: Dockerfile.www
+      args:
+        NODE_VERSION: 22.22.2-slim@sha256:9f6d5975c7dca860947d3915877f85607946403fc55349f39b4bc3688448bb6e
+      labels:
+        org.opencontainers.image.revision: ${APP_SOURCE_SHA}
+        org.opencontainers.image.source: https://github.com/instantdb/instant
+    depends_on:
+      - server
+    environment:
+      INSTANT_BACKEND_URL: http://${INSTANT_E2E_HOST:-127.0.0.1}:${BACKEND_PORT:-18888}
+    ports:
+      - "127.0.0.1:${DASHBOARD_PORT:-13000}:3000"
+    mem_limit: 1g
+    cpus: 2
+
+volumes:
+  postgres-data:
+    labels:
+      org.instantdb.e2e.instance: ${INSTANCE_ID:?Run the installer first}
+  minio-data:
+    labels:
+      org.instantdb.e2e.instance: ${INSTANCE_ID:?Run the installer first}
+  server-config:
+    labels:
+      org.instantdb.e2e.instance: ${INSTANCE_ID:?Run the installer first}

@@ -1,0 +1,11 @@
+check that page contains "Let's log you in"
+enter stored value "e2eEmail" into "Enter your email address"
+click "Send Code"
+check that page contains "Enter your code"
+open new tab
+open url stored value "codeInboxUrl"
+check that page contains "Verification code"
+grab value of attribute "value" from input "Verification code" and save it as "oneTimeCode"
+close tab
+enter stored value "oneTimeCode" into "Your code"
+click "Verify Code"

@@ -1,0 +1,120 @@
+name: Explorer E2E (opt-in)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/e2e-tests.yml'
+      - 'tests/E2E/**'
+      - 'client/**'
+      - 'server/**'
+
+permissions:
+  contents: read
+
+# This also queues manual runs across branches. Coordinate external CLI runs too.
+concurrency:
+  group: instant-testrigor-${{ vars.TESTRIGOR_SUITE_ID || 'unconfigured' }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    outputs:
+      enabled: ${{ steps.config.outputs.enabled }}
+    steps:
+      - name: Check opt-in configuration
+        id: config
+        env:
+          CI_TOKEN: ${{ secrets.TESTRIGOR_CI_TOKEN }}
+          SUITE_ID: ${{ vars.TESTRIGOR_SUITE_ID }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          REPOSITORY: ${{ github.repository }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          manual = (os.environ['EVENT_NAME'] == 'workflow_dispatch'
+                    and os.environ['REF_NAME'] == 'refs/heads/' + os.environ['DEFAULT_BRANCH'])
+          owner_pr = (os.environ['EVENT_NAME'] == 'pull_request'
+                      and os.environ['PR_HEAD_REPOSITORY'] == os.environ['REPOSITORY']
+                      and os.environ['PR_AUTHOR'].lower() == os.environ['REPOSITORY_OWNER'].lower()
+                      and os.environ['PR_BASE'] == os.environ['DEFAULT_BRANCH']
+                      and os.environ['PR_DRAFT'] == 'false')
+          trusted = manual or owner_pr
+          configured = bool(os.environ['CI_TOKEN']) and bool(re.fullmatch(r'[A-Za-z0-9_-]+', os.environ['SUITE_ID']))
+          enabled = trusted and configured
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('enabled=' + str(enabled).lower() + '\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Explorer E2E: ' + ('configured; starting trusted manual run.' if enabled else
+                            'skipped; requires a trusted manual/owner PR run, TESTRIGOR_CI_TOKEN and TESTRIGOR_SUITE_ID.') + '\n')
+          PY
+
+  e2e:
+    needs: gate
+    if: needs.gate.outputs.enabled == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      INSTANT_E2E_PROJECT: instant-e2e
+      INSTANT_E2E_HOST: localhost
+      TESTRIGOR_SUITE_ID: ${{ vars.TESTRIGOR_SUITE_ID }}
+      E2E_BRANCH: ${{ github.head_ref || github.ref_name }}
+      E2E_COMMIT: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Set private runner paths
+        run: |
+          printf 'INSTANT_E2E_STATE_DIR=%s/instant-e2e-runtime\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'INSTANT_E2E_FIXTURE_DIR=%s/instant-e2e-fixture\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'INSTANT_E2E_PRIVATE_DIR=%s/instant-e2e-private\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'INSTANT_E2E_ARTIFACT_DIR=%s/instant-e2e-artifacts\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'TESTRIGOR_CLI_HOME=%s/testrigor-cli\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.15.0'
+
+      - name: Check runner capacity and install pinned CLI
+        run: |
+          python3 tests/E2E/scripts/ci-run.py preflight
+          npm install --global @testrigor/testrigor-cli@3.0.0
+          testrigor --version
+
+      - name: Build checkout and prepare isolated fixture
+        timeout-minutes: 100
+        run: python3 tests/E2E/scripts/ci-run.py prepare
+
+      - name: Run ten cases through localhost tunnel
+        timeout-minutes: 70
+        env:
+          TESTRIGOR_API_KEY: ${{ secrets.TESTRIGOR_CI_TOKEN }}
+        run: python3 tests/E2E/scripts/ci-run.py run
+
+      - name: Collect diagnostics and clean up
+        if: always()
+        timeout-minutes: 8
+        run: python3 tests/E2E/scripts/ci-run.py finish
+
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: instant-explorer-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/instant-e2e-artifacts/
+          if-no-files-found: warn
+          retention-days: 7

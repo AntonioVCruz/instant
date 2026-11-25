@@ -1,0 +1,31 @@
+customSteps: |
+  save value from stored value "accountAEmail" as "e2eEmail"
+  save value from stored value "accountAInbox" as "codeInboxUrl"
+  save value from stored value "accountATitle" as "appTitle"
+  save value from stored value "accountAId" as "appId"
+  explorer-open
+  click "e2e_types"
+  click "Add row"
+  click checkbox "NULL" to the right of "title"
+  generate from regex "Typed[A-Za-z]{20}", then enter into "hello world (Shift+Enter for new line)" and save as "typedTitle"
+  click checkbox "NULL" to the right of "score"
+  click checkbox "NULL" to the right of "active"
+  click button "Save"
+  check that page contains stored value from "typedTitle"
+  reload
+  check that page contains stored value from "typedTitle"
+  check that page contains "1 - 1 of 1"
+  check that page contains "0"
+  check that page contains "false"
+  hover over stored value "typedTitle"
+  click "Edit row" to the left of stored value "typedTitle"
+  check that page contains "number" to the right of "score"
+  check that page contains "boolean" to the right of "active"
+  check that checkbox "NULL" to the right of "memo" is checked
+  type escape
+  click checkbox to the left of stored value "typedTitle"
+  explorer-confirm-deletion
+  reload
+  check that page doesn't contain stored value from "typedTitle"
+labels: [instant-explorer, instant-tc07]
+testCaseUuid: "34d7d4f5-26cb-4cba-a35c-32c7408a738c"

@@ -1,0 +1,51 @@
+customSteps: |
+  save value from stored value "accountCEmail" as "e2eEmail"
+  save value from stored value "accountCInbox" as "codeInboxUrl"
+  save value from stored value "accountCTitle" as "appTitle"
+  save value from stored value "accountCId" as "appId"
+  explorer-open
+  click "e2e_related"
+  click "Add row"
+  click checkbox "NULL"
+  generate from regex "Child[A-Za-z]{20}", then enter into "hello world (Shift+Enter for new line)" and save as "childTitle"
+  click button "Save"
+  check that page contains stored value from "childTitle"
+  click "e2e_people"
+  click "Add row"
+  click checkbox "NULL"
+  generate from regex "Parent[A-Za-z]{20}", then enter into "hello world (Shift+Enter for new line)" and save as "parentTitle"
+  click button "Save"
+  check that page contains stored value from "parentTitle"
+  hover over stored value "parentTitle"
+  click "Edit row" to the left of stored value "parentTitle"
+  click "Add link"
+  // The clean namespace contains only the child created by this case.
+  type arrow down
+  type enter
+  click button "Save"
+  reload
+  check that page contains "1 link" to the left of stored value "parentTitle"
+  click "1 link" to the left of stored value "parentTitle"
+  check that page contains stored value from "childTitle"
+  check that page contains "1 link" to the left of stored value "childTitle"
+  click "e2e_people"
+  hover over stored value "parentTitle"
+  click "Edit row" to the left of stored value "parentTitle"
+  click "Unlink"
+  click button "Save"
+  reload
+  check that page contains stored value from "parentTitle"
+  check that page contains "0 links" to the left of stored value "parentTitle"
+  click "e2e_related"
+  check that page contains stored value from "childTitle"
+  check that page contains "0 links" to the left of stored value "childTitle"
+  click checkbox to the left of stored value "childTitle"
+  explorer-confirm-deletion
+  click "e2e_people"
+  check that page contains stored value from "parentTitle"
+  click checkbox to the left of stored value "parentTitle"
+  explorer-confirm-deletion
+  reload
+  check that page doesn't contain stored value from "parentTitle"
+labels: [instant-explorer, instant-tc06]
+testCaseUuid: "fcc1527c-d882-47fa-a19f-43cece8ecf04"

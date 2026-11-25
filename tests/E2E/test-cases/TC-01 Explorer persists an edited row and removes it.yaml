@@ -1,0 +1,28 @@
+customSteps: |
+  save value from stored value "accountAEmail" as "e2eEmail"
+  save value from stored value "accountAInbox" as "codeInboxUrl"
+  save value from stored value "accountATitle" as "appTitle"
+  save value from stored value "accountAId" as "appId"
+  explorer-open
+  click "Add row"
+  click checkbox "NULL"
+  generate from regex "Original[A-Za-z]{20}", then enter into "hello world (Shift+Enter for new line)" and save as "originalTitle"
+  click button "Save"
+  check that page contains stored value from "originalTitle"
+  reload
+  check that page contains stored value from "originalTitle"
+  hover over stored value "originalTitle"
+  click "Edit row" to the left of stored value "originalTitle"
+  generate from regex "Edited[A-Za-z]{20}", then enter into "hello world (Shift+Enter for new line)" and save as "editedTitle"
+  click button "Save"
+  check that page contains stored value from "editedTitle"
+  reload
+  check that page contains stored value from "editedTitle"
+  check that page doesn't contain stored value from "originalTitle"
+  click checkbox to the left of stored value "editedTitle"
+  explorer-confirm-deletion
+  reload
+  check that page contains stored value from "namespace"
+  check that page doesn't contain stored value from "editedTitle"
+labels: [instant-explorer, instant-tc01]
+testCaseUuid: "c314b53e-6250-4f3b-84a7-90148030649c"
